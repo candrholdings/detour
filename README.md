@@ -4,9 +4,10 @@ A reverse proxy for frontend developers
 [<img src="https://travis-ci.org/candrholdings/detour.svg?branch=master" />](https://travis-ci.org/candrholdings/detour)
 
 ## Install
-* `npm install detour-proxy`
+* `npm install detour-proxy -g`
 * Edit [`detour-config.json`](detour-config.json)
 * Run `detour`
+  * For custom config file and port, run `detour config-file.json 1337`
 
 ## Sample configuration
 Namely, `detour-config.json`, is the configuration file for detour. The following is a sample configuration.
@@ -28,7 +29,7 @@ Namely, `detour-config.json`, is the configuration file for detour. The followin
 
 `mappings` are processed from top to bottom, and they define how the request could be remapped.
 
-In the sample configuration, the first rule will map `/` (i.e. every requests to the web site) to local directory `html/`. For example, request to `/helloworld.html` will be forwarded to file `html/helloworld.html`.
+In the sample configuration, the first rule will map `/` (i.e. every requests to the web site) to local directory `html/`. For example, request to `/helloworld.html` will be forwarded to file `html/helloworld.html`. The path is relative to the config file.
 
 `skipOn404` indicate that if the requested file is not found, it will skip this mapping and evaluate the next one. Otherwise, detour will return with 404.
 
