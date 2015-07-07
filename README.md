@@ -1,4 +1,6 @@
 # Detour
+
+[![Join the chat at https://gitter.im/candrholdings/detour](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/candrholdings/detour?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 A reverse proxy to untie the knot between frontend and backend developers
 
 [<img src="https://travis-ci.org/candrholdings/detour.svg?branch=master" />](https://travis-ci.org/candrholdings/detour)
