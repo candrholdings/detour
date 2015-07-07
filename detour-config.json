@@ -1,0 +1,11 @@
+{
+    "logLevel": "follow",
+    "mappings": [{
+        "from": "/",
+        "to": "html/",
+        "skipOn404": true
+    }, {
+        "from": "/api/",
+        "to": "http://api.example.com/"
+    }]
+}
