@@ -1,7 +1,7 @@
 # Detour
 A reverse proxy for frontend developers
 
-[<img src="https://travis-ci.org/candrholdings/async-linq.svg?branch=master" />](https://travis-ci.org/candrholdings/async-linq)
+[<img src="https://travis-ci.org/candrholdings/detour.svg?branch=master" />](https://travis-ci.org/candrholdings/detour)
 
 ## Install
 * `npm install detour-proxy`
