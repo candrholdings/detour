@@ -69,7 +69,7 @@ For file-based destination, detour adopted `index.html` as the name of "default 
 Detour follow server side includes (or SSI). The SSI path will also be evaluated against the mappings defined in `detour-config.json`. To aid development, the SSI-ed output will have extra comment `<!-- BEGIN SSI /include/topnav.html -->` for easier debugging SSI issues.
 
 ### LiveReload support
-Detour built-in [LiveReload server](http://livereload.com/). When detour is up, it will watch all file-based mapping destinations and changes will be broadcasted to LiveReload plugin immediately. Instead of using [`fs.watch`](https://nodejs.org/api/fs.html#fs_fs_watch_filename_options_listener), we use a more reliable approach by crawling file stats every 2 seconds. We still use [`fs.watch`](https://nodejs.org/api/fs.html#fs_fs_watch_filename_options_listener) but only for auxillary purpose.
+Detour built-in [LiveReload server](http://livereload.com/). When detour is up, it will watch all mappings that point to local file system. Changes detected will be broadcasted to LiveReload plugin immediately. Instead of using unreliable [`fs.watch`](https://nodejs.org/api/fs.html#fs_fs_watch_filename_options_listener), we use a more reliable approach by crawling every file stats every 2 seconds. We still use [`fs.watch`](https://nodejs.org/api/fs.html#fs_fs_watch_filename_options_listener) for auxiliary purpose.
 
 ### Issues
 If you encounter any issues, please file it on [GitHub](../../issues). To speed up our investigation, please file with a minimal repro steps.
