@@ -10,8 +10,8 @@
             urlPathname = url.pathname,
             from = rule.from,
             to = rule.to,
-            toDir = to[to.length - 1] === '/',
-            fromDir = from[from.length - 1] === '/';
+            toDir = /[\\\/]$/.test(to),
+            fromDir = /[\\\/]$/.test(from);
 
         if (toDir) {
             if (fromDir) {

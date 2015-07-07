@@ -92,7 +92,11 @@
             });
 
             if (!/^http/.test(rule.to)) {
-                rule.to = path.resolve(path.dirname(configPath), rule.to);
+                // path.resolve will remove trailing slash, we use trailing slash to indicate a file or folder
+                // Therefore, remember the trailing slash and add it back if needed
+                var toDir = /[\\\/]$/.test(rule.to);
+
+                rule.to = path.resolve(path.dirname(configPath), rule.to) + (toDir ? path.sep : '');
 
                 var watcher = require('./util/watch')(),
                     loopWatch = function () {
