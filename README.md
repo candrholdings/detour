@@ -7,25 +7,25 @@ A reverse proxy to untie the knot between frontend and backend developers
 Frontend developers cannot focus on their development because
 
 * Backend deployment is complicated and take up lot of resources on their box
-* New features need to wait for backend API to ready
-  * Mocking is okay but changing spec makes mock update time-consuming
+* New features depends on backend API readiness
+  * Mocking is okay but changing spec makes mock update time consuming
 * Need to tackle CORS issue during tight development schedule
 
 ## Scenarios
 * Decouple frontend and backend development team
   * Join web server and API servers together as if they are from a single server
-  * Frontend developers can use a shared backend server, no need to install database in their own box to run the whole site
+  * Few frontend developers can use a shared backend server, no need to install database in their own box to run the whole site
   * Don't wait until backend API is ready, mock a response JSON/XML and continue web development
-  * Built-in LiveReload server
+  * Built-in LiveReload server for quick consumption
 * Mock changes on big production site
-  * Host a webserver without downloading the whole site, mock pages as you need
+  * Mock as you need, host a smaller staging site without downloading everything from production
   * Support server side includes
 * Simple URL rewrite
 
 ## Install
 Run `npm install detour-proxy -g` to install detour in your box. For every site,
 
-* Create a [`detour-config.json`](detour-config.json), sample below
+* Create a [`detour-config.json`](detour-config.json) (sample configuration below)
 * Run `detour` to start the server
   * For custom config path and port, run `detour path-to-config-file.json 1337`
 
