@@ -44,7 +44,7 @@ Run `npm install detour-proxy -g` to install detour in your box. For every site,
 }
 ```
 
-`loglevel` could be `error`, `warning`, `info`, `skip`, `forward`, `follow`. Detour use [`winston`](/winstonjs/winston).
+`loglevel` could be `error`, `warning`, `info`, `skip`, `forward`, `follow`. Detour use [`winston`](https://github.com/winstonjs/winston/).
 
 `mappings` defines how request could be remapped. Mappings can be overlapping and they are processed from top to bottom (first win will stop other rules).
 
@@ -69,7 +69,7 @@ Detour follow server side includes (or SSI). The SSI path will also be evaluated
 Detour built-in [LiveReload server](http://livereload.com/). When detour is up, it will watch all file-based mapping destinations and changes will be broadcasted to LiveReload plugin immediately.
 
 ### Issues
-If you encounter any issues, please file it on [GitHub](issues). To speed up our investigation, please file with a minimal repro steps.
+If you encounter any issues, please file it on [GitHub](../../issues). To speed up our investigation, please file with a minimal repro steps.
 
 ### Feature recommendation
-If you want to recommend a feature, please file it on [issues](issues) too. Please let us know the rationale behind your feature and we will be more than happy to design and implement the feature for you.
+If you want to recommend a feature, please file it on [issues](../../issues) too. Please let us know the rationale behind your feature and we will be more than happy to design and implement the feature for you.
