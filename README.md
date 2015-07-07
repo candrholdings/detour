@@ -57,6 +57,8 @@ You can specify both file path or http:// path to the `to` argument.
 
 The second mapping will rewrite `/api/` to http://api.example.com/. For example, requests to `/api/helloworld` will be forwarded on behalf to http://api.example.com/helloworld/. Most request headers will be retained. Some are discarded, e.g. `accept-encoding`.
 
+Currently, we do not add headers (e.g. `x-forwarded-for`, `x-forwarded-proto`) to the forwarded request.
+
 ### Default port
 By default, detour use a random port number 7000-7999. To use a custom port number, you can specify it in the command-line. Type `detour path-to-config-file.json 1337` to run detour on port 1337 with configuration file `path-to-config-file.json`.
 
