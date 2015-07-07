@@ -92,6 +92,8 @@
             });
 
             if (!/^http/.test(rule.to)) {
+                rule.to = path.resolve(path.dirname(configPath), rule.to);
+
                 var watcher = require('./util/watch')(),
                     loopWatch = function () {
                         watcher.watch(rule.to, function (err, changes) {
