@@ -4,7 +4,7 @@ A reverse proxy to untie the knot between frontend and backend developers
 [<img src="https://travis-ci.org/candrholdings/detour.svg?branch=master" />](https://travis-ci.org/candrholdings/detour)
 
 ## Problems
-Frontend developers cannot focus on their development because:
+Frontend developers cannot focus on their development because
 
 * Backend deployment is complicated and take up lot of resources on their box
 * New features need to wait for backend API to ready
