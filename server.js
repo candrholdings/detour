@@ -1,4 +1,4 @@
-/*jshint forin:true, noarg:true, noempty:true, eqeqeq:true, evil:false, bitwise:false, strict:true, undef:true, curly:true, devel:true, indent:4, maxerr:50, expr:true, loopfunc:true, onevar:false, multistr:true, node:true */
+#!/usr/bin/env node
 
 !function (async, express, fs, http, htps, mime, path, url, winston) {
     'use strict';
@@ -22,7 +22,7 @@
             transports: [new (winston.transports.Console)({ colorize: true })]
         }),
         evaluate = require('./rule-evaluator'),
-        configPath = process.argv[2] || 'config.json',
+        configPath = process.argv[2] || 'detour-config.json',
         config,
         systemProxy;
 
@@ -37,7 +37,7 @@
 
     readJsonFile(configPath, function (err, json) {
         if (err) {
-            logger.error('Failed to read "config.json" due to "' + describe(err) + '".');
+            logger.error('Failed to read "' + configPath + '" due to "' + describe(err) + '".');
             process.exit(-1);
         }
 
@@ -58,17 +58,17 @@
         }
 
         startServer(config.port || process.env.port || process.argv[3] || 7000 + Math.floor(Math.random() * 1000));
+
+        fs.watch(configPath, function () {
+            logger.warn('"' + configPath + '" updated, exiting with code 2');
+            process.exit(2);
+        });
     });
 
-    fs.watch(require('path').dirname(process.argv[1]), function () {
-        logger.warn('Code changed, exiting with code 2');
-        process.exit(2);
-    });
-
-    fs.watch(configPath, function () {
-        logger.warn('"' + configPath + '" updated, exiting with code 2');
-        process.exit(2);
-    });
+    // fs.watch(require('path').dirname(process.argv[1]), function () {
+    //     logger.warn('Code changed, exiting with code 2');
+    //     process.exit(2);
+    // });
 
     function startServer(port) {
         var app = express(),
