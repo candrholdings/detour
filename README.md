@@ -7,7 +7,7 @@ A reverse proxy for frontend developers
 * `npm install detour-proxy -g`
 * Edit [`detour-config.json`](detour-config.json)
 * Run `detour`
-  * For custom config file and port, run `detour config-file.json 1337`
+  * For custom config file and port, run `detour path-to-config-file.json 1337`
 
 ## Sample configuration
 Namely, `detour-config.json`, is the configuration file for detour. The following is a sample configuration.
