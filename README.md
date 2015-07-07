@@ -1,16 +1,35 @@
 # Detour
-A reverse proxy for frontend developers
+A reverse proxy to untie the knot between frontend and backend developers
 
 [<img src="https://travis-ci.org/candrholdings/detour.svg?branch=master" />](https://travis-ci.org/candrholdings/detour)
 
+## Problems
+Frontend developers cannot focus on their development because:
+
+* Backend deployment is complicated and take up lot of resources on their box
+* New features need to wait for backend API to ready
+  * Mocking is okay but changing spec makes mock update time-consuming
+* Need to tackle CORS issue during tight development schedule
+
+## Scenarios
+* Decouple frontend and backend development team
+  * Join web server and API servers together as if they are from a single server
+  * Frontend developers can use a shared backend server, no need to install database in their own box to run the whole site
+  * Don't wait until backend API is ready, mock a response JSON/XML and continue web development
+  * Built-in LiveReload server
+* Mock changes on big production site
+  * Host a webserver without downloading the whole site, mock pages as you need
+  * Support server side includes
+* Simple URL rewrite
+
 ## Install
-* `npm install detour-proxy -g`
-* Edit [`detour-config.json`](detour-config.json)
-* Run `detour`
-  * For custom config file and port, run `detour path-to-config-file.json 1337`
+Run `npm install detour-proxy -g` to install detour in your box. For every site,
+
+* Create a [`detour-config.json`](detour-config.json), sample below
+* Run `detour` to start the server
+  * For custom config path and port, run `detour path-to-config-file.json 1337`
 
 ## Sample configuration
-Namely, `detour-config.json`, is the configuration file for detour. The following is a sample configuration.
 ```js
 {
     "logLevel": "follow",
@@ -25,27 +44,32 @@ Namely, `detour-config.json`, is the configuration file for detour. The followin
 }
 ```
 
-`loglevel` could be `error`, `warning`, `info`, `skip`, `forward`, `follow`. Detour use `winston` for logging.
+`loglevel` could be `error`, `warning`, `info`, `skip`, `forward`, `follow`. Detour use [`winston`](/winstonjs/winston).
 
-`mappings` are processed from top to bottom, and they define how the request could be remapped.
+`mappings` defines how request could be remapped. Mappings can be overlapping and they are processed from top to bottom (first win will stop other rules).
 
-In the sample configuration, the first rule will map `/` (i.e. every requests to the web site) to local directory `html/`. For example, request to `/helloworld.html` will be forwarded to file `html/helloworld.html`. The path is relative to the config file.
+In the sample configuration, the first mapping will rewrite `/` (i.e. all requests to the site) to local directory `html/`. For example, request to `/helloworld.html` will be served with local file `html/helloworld.html`, relative to the config file.
 
 `skipOn404` indicate that if the requested file is not found, it will skip this mapping and evaluate the next one. Otherwise, detour will return with 404.
 
-The second rule will map `/api/` to http://api.example.com/. For example, requests to `/api/helloworld` will be forwarded on behalf to http://api.example.com/helloworld/. Most request headers will be retained. Some are discarded, e.g. `accept-encoding`.
+You can specify both file path or http:// path to the `to` argument.
+
+The second mapping will rewrite `/api/` to http://api.example.com/. For example, requests to `/api/helloworld` will be forwarded on behalf to http://api.example.com/helloworld/. Most request headers will be retained. Some are discarded, e.g. `accept-encoding`.
 
 ### Default port
-Detour use a random port number 7000-7999. You can specify it in the command-line, `detour config.json 1337` to run detour on port 1337 with configuration file `config.json`.
+By default, detour use a random port number 7000-7999. To use a custom port number, you can specify it in the command-line. Type `detour path-to-config-file.json 1337` to run detour on port 1337 with configuration file `path-to-config-file.json`.
 
 ### Default document
-Detour adopted `index.html` as the name of "default document" for file-based destination. If the request does not contain a filename and the destination is on file system, detour will add `index.html` to the request.
+For file-based destination, detour adopted `index.html` as the name of "default document". If the request does not contain a filename (end with slash) and the mapping destination is local file system, detour will add `index.html` to the request URL.
 
-### Server-side include (SSI)
-Detour follow SSI. The SSI path will be evaluated against the mappings defined in `detour-config.json`. To aid development, the SSI-ed output will have extra comment `<!-- BEGIN SSI /include/topnav.html -->` for easier debugging SSI issues.
+### Server side includes
+Detour follow server side includes (or SSI). The SSI path will also be evaluated against the mappings defined in `detour-config.json`. To aid development, the SSI-ed output will have extra comment `<!-- BEGIN SSI /include/topnav.html -->` for easier debugging SSI issues.
 
 ### LiveReload support
-Detour built-in [LiveReload server](http://livereload.com/) natively. All file-based mapping destinations will be watched and changes will be broadcasted to LiveReload plugin.
+Detour built-in [LiveReload server](http://livereload.com/). When detour is up, it will watch all file-based mapping destinations and changes will be broadcasted to LiveReload plugin immediately.
 
 ### Issues
 If you encounter any issues, please file it on [GitHub](issues). To speed up our investigation, please file with a minimal repro steps.
+
+### Feature recommendation
+If you want to recommend a feature, please file it on [issues](issues) too. Please let us know the rationale behind your feature and we will be more than happy to design and implement the feature for you.
