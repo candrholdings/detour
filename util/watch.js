@@ -123,11 +123,11 @@
                 var currfilename = pendings.pop();
 
                 fs.stat(currfilename, function (err, stat) {
-                    (stat.isDirectory() || stat.isFile()) && watchers.push(fs.watch(currfilename, changed));
+                    if (stat.isDirectory() || stat.isFile()) {
+                        watchers.push(fs.watch(currfilename, changed).on('error', changed));
+                    }
 
                     if (stat.isDirectory()) {
-                        watchers.push(fs.watch(currfilename, changed));
-
                         fs.readdir(currfilename, function (err, filenames) {
                             !err && filenames.forEach(function (filename) {
                                 pendings.push(path.join(currfilename, filename));

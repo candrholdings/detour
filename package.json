@@ -1,6 +1,6 @@
 {
   "name": "detour-proxy",
-  "version": "0.0.11",
+  "version": "0.0.13",
   "description": "Reverse proxy for frontend developers",
   "bugs": {
     "url": "https://github.com/candrholdings/detour/issues"
