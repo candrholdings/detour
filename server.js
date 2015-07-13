@@ -227,13 +227,13 @@
     function requestToHttp(req, detourUrl, options, redirectTtl, callback) {
         var contentLength = +req.headers['content-length'],
             requestOptions = parseUrl(detourUrl),
+            headers = requestOptions.headers = req.headers,
             sreq,
             proxy = options.proxy || systemProxy;
 
         req.headers.host = requestOptions.host;
         delete req.headers['accept-encoding'];
         requestOptions.method = req.method;
-        requestOptions.headers = req.headers;
         requestOptions.auth = req.auth;
         requestOptions.agent = false;
 
@@ -242,6 +242,14 @@
             requestOptions.port = proxy.port;
             requestOptions.protocol = proxy.protocol || 'http:';
         }
+
+        // Microsoft Edge will send "cookie" header with undefined content
+        // It would fail with Error: "name" and "value" are required for setHeader().
+        Object.getOwnPropertyNames(headers).forEach(function (name) {
+            if (typeof headers[name] === 'undefined') {
+                delete headers[name];
+            }
+        });
 
         sreq = http.request(requestOptions, function (sres) {
             var statusCode = sres.statusCode,
