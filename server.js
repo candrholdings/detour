@@ -10,73 +10,67 @@
         formatUrl = url.format,
         parseUrl = url.parse,
         resolveUrl = url.resolve,
-        logger = new (winston.Logger)({
-            levels: {
-                error: 9,
-                warn: 7,
-                info: 5,
-                skip: 4,
-                forward: 3,
-                follow: 3
-            },
-            transports: [new (winston.transports.Console)({ colorize: true })]
-        }),
         evaluate = require('./rule-evaluator'),
         configPath = process.argv[2] || 'detour-config.json',
-        config,
-        systemProxy;
+        systemProxy = process.env.http_proxy;
+
+    systemProxy = systemProxy && parseUrl(systemProxy);
 
     winston.addColors({
-        error: 'bold red',
-        warn: 'bold yellow',
-        info: 'bold green',
+        // error: 'bold red',
+        // warn: 'bold yellow',
+        // info: 'bold green',
         skip: 'bold yellow',
         forward: 'bold cyan',
         follow: 'bold green'
     });
 
-    readJsonFile(configPath, function (err, json) {
+    require.main === module && readJsonFile(configPath, function (err, config) {
         if (err) {
-            logger.error('Failed to read "' + configPath + '" due to "' + describe(err) + '".');
+            console.error('Failed to read "' + configPath + '" due to "' + describe(err) + '".');
             process.exit(-1);
         }
 
-        config = json;
+        new DetourProxy(config, process.env.port || process.argv[3] || 7000 + Math.floor(Math.random() * 1000));
 
-        var logLevel = config.logLevel;
+        fs.watch(configPath, function () {
+            console.warn('"' + configPath + '" updated, exiting with code 2');
+            process.exit(2);
+        });
+    });
+
+    module.exports = function (config, port) {
+        new DetourProxy(config, port || 1337);
+    };
+
+    function DetourProxy(config, port) {
+        var that = this,
+            app = express(),
+            livereload = config.livereload !== false && require('./util/livereload')().listen(),
+            logger = that.logger = new (winston.Logger)({
+                levels: {
+                    error: 9,
+                    warn: 7,
+                    info: 5,
+                    skip: 4,
+                    forward: 3,
+                    follow: 3
+                },
+                transports: [new (winston.transports.Console)({ colorize: true })]
+            }),
+            logLevel = config.logLevel;
 
         Object.getOwnPropertyNames(logger.transports).forEach(function (name) {
             logger.transports[name].level = logLevel || 'info';
         });
 
-        var httpProxy = process.env.http_proxy;
+        systemProxy && logger.info('System proxy is set', { proxy: systemProxy });
 
-        systemProxy = config.proxy || (httpProxy && parseUrl(httpProxy));
-
-        if (systemProxy) {
-            logger.info('System proxy is set', { proxy: systemProxy });
-        }
-
-        startServer(config.port || process.env.port || process.argv[3] || 7000 + Math.floor(Math.random() * 1000));
-
-        fs.watch(configPath, function () {
-            logger.warn('"' + configPath + '" updated, exiting with code 2');
-            process.exit(2);
-        });
-    });
-
-    // fs.watch(require('path').dirname(process.argv[1]), function () {
-    //     logger.warn('Code changed, exiting with code 2');
-    //     process.exit(2);
-    // });
-
-    function startServer(port) {
-        var app = express(),
-            livereload = require('./util/livereload')().listen();
+        that.config = config;
 
         config.mappings.forEach(function (rule) {
             app.use(function (req, res, next) {
-                handleRequestByRule(req, rule, function (err, body, statusCode, headers) {
+                that.handleRequestByRule(req, rule, function (err, body, statusCode, headers) {
                     if (err) {
                         res.status(500).send();
                     } else if (body) {
@@ -98,18 +92,20 @@
 
                 rule.to = path.resolve(path.dirname(configPath), rule.to) + (toDir ? path.sep : '');
 
-                var watcher = require('./util/watch')(),
-                    loopWatch = function () {
-                        watcher.watch(rule.to, function (err, changes) {
-                            !err && livereload.reload(changes.map(function (change) {
-                                return url.resolve(rule.from, path.relative(rule.to, change));
-                            }));
+                if (livereload) {
+                    var watcher = require('./util/watch')(),
+                        loopWatch = function () {
+                            watcher.watch(rule.to, function (err, changes) {
+                                !err && livereload.reload(changes.map(function (change) {
+                                    return url.resolve(rule.from, path.relative(rule.to, change));
+                                }));
 
-                            loopWatch();
-                        });
-                    };
+                                loopWatch();
+                            });
+                        };
 
-                loopWatch();
+                    loopWatch();
+                }
             }
         });
 
@@ -122,24 +118,27 @@
         });
     }
 
-    function getRequestHandler(url) {
+    DetourProxy.prototype.getRequestHandler = function (url) {
+        var that = this;
+
         if (url.substr(0, 4) === 'http') {
-            return requestToHttp;
+            return that.requestToHttp;
         } else {
-            return requestToFileSystem;
+            return that.requestToFileSystem;
         }
     }
 
-    function handleRequestByRule(req, rule, callback) {
-        var detourUrl = evaluate(req, rule);
+    DetourProxy.prototype.handleRequestByRule = function (req, rule, callback) {
+        var that = this,
+            detourUrl = evaluate(req, rule);
 
         if (!detourUrl) { return callback(); }
 
-        getRequestHandler(detourUrl)(req, detourUrl, rule, 5, function (err, body, statusCode, headers) {
+        that.getRequestHandler(detourUrl).call(that, req, detourUrl, rule, 5, function (err, body, statusCode, headers) {
             if (err) {
                 callback(err);
             } else if (statusCode === 200 && headers['content-type'] === 'text/html') {
-                processServerSideInclude(req, body.toString(), function (err, body) {
+                that.processServerSideInclude(req, body.toString(), function (err, body) {
                     callback(null, body, statusCode, headers);
                 });
             } else {
@@ -148,11 +147,12 @@
         });
     }
 
-    function handleRequestByAllRules(req, callback) {
-        var resultErr, resultBody, resultStatusCode, resultHeaders;
+    DetourProxy.prototype.handleRequestByAllRules = function (req, callback) {
+        var that = this,
+            resultErr, resultBody, resultStatusCode, resultHeaders;
 
-        async.some(config.mappings, function (rule, next) {
-            handleRequestByRule(req, rule, function (err, body, statusCode, headers) {
+        async.some(that.config.mappings, function (rule, next) {
+            that.handleRequestByRule(req, rule, function (err, body, statusCode, headers) {
                 if (err) {
                     resultErr = err;
                     next(1);
@@ -176,17 +176,18 @@
         });
     }
 
-    function requestToFileSystem(req, detourUrl, options, redirectTtl, callback) {
-        var path = detourUrl.split('?')[0],
+    DetourProxy.prototype.requestToFileSystem = function (req, detourUrl, options, redirectTtl, callback) {
+        var that = this,
+            path = detourUrl.split('?')[0],
             logLine = req.originalUrl + ' -> ' + path;
 
         fs.stat(path, function (err, stat) {
             if (err) {
                 if (err.code === 'ENOENT' && options.skipOn404) {
-                    logger.skip(logLine);
+                    that.logger.skip(logLine);
                     callback();
                 } else {
-                    logger.warn(logLine, err);
+                    that.logger.warn(logLine, err);
                     callback(err);
                 }
 
@@ -196,36 +197,37 @@
             if (stat.isFile()) {
                 fs.readFile(path, function (err, data) {
                     if (err) {
-                        logger.warn(logLine, err);
+                        that.logger.warn(logLine, err);
 
                         callback(err);
                     } else {
                         var contentType = mime.lookup(path);
 
-                        logger.forward(logLine, { contentType: contentType });
+                        that.logger.forward(logLine, { contentType: contentType });
 
                         callback(null, data, 200, { 'content-type': contentType });
                     }
                 });
             } else if (stat.isDirectory()) {
                 if (options.default === false) {
-                    logger.skip(logLine);
+                    that.logger.skip(logLine);
                     callback();
                 } else {
                     detourUrl = path.replace(/\/*$/, '/') + (options.default || 'index.html');
-                    logger.follow(req.originalUrl + ' -> ' + detourUrl);
+                    that.logger.follow(req.originalUrl + ' -> ' + detourUrl);
 
-                    return requestToFileSystem(req, detourUrl, options, redirectTtl, callback);
+                    return that.requestToFileSystem(req, detourUrl, options, redirectTtl, callback);
                 }
             } else {
-                logger.warn(logLine, 'unknown file');
+                that.logger.warn(logLine, 'unknown file');
                 callback();
             }
         });
     }
 
-    function requestToHttp(req, detourUrl, options, redirectTtl, callback) {
-        var contentLength = +req.headers['content-length'],
+    DetourProxy.prototype.requestToHttp = function (req, detourUrl, options, redirectTtl, callback) {
+        var that = this,
+            contentLength = +req.headers['content-length'],
             requestOptions = parseUrl(detourUrl),
             headers = requestOptions.headers = req.headers,
             sreq,
@@ -256,7 +258,7 @@
                 logLine = req.originalUrl + ' -> ' + formatUrl(requestOptions);
 
             if (sres.statusCode === 404 && options.skipOn404) {
-                logger.skip(logLine);
+                that.logger.skip(logLine);
 
                 callback && callback();
                 callback = 0;
@@ -264,7 +266,7 @@
                 return;
             } else if (sres.statusCode === 302) {
                 if (redirectTtl === 0) {
-                    logger.skip(req.originalUrl + ' has too many redirections');
+                    that.logger.skip(req.originalUrl + ' has too many redirections');
 
                     callback && callback();
                     callback = 0;
@@ -272,14 +274,14 @@
                     return;
                 } else {
                     detourUrl = sres.headers.location;
-                    logger.follow(req.originalUrl + ' -> ' + sres.headers.location);
+                    that.logger.follow(req.originalUrl + ' -> ' + sres.headers.location);
 
                     var cookies = parseCookie(options.cookie);
 
                     cookies = parseSetCookie(sres.headers['set-cookie'], cookies);
                     (req.headers || (req.headers = {})).cookie = serializeCookie(cookies);
 
-                    return requestToHttp(req, detourUrl, options, redirectTtl - 1, callback);
+                    return that.requestToHttp(req, detourUrl, options, redirectTtl - 1, callback);
                 }
             }
 
@@ -299,25 +301,25 @@
             if (hasContent(sres)) {
                 readToEnd(sres, function (err, sbody) {
                     if (err) {
-                        logger.warn(logLine, err);
+                        that.logger.warn(logLine, err);
                         callback && callback(err);
                         callback = 0;
                     } else {
-                        logger.forward(logLine, { statusCode: sres.statusCode });
+                        that.logger.forward(logLine, { statusCode: sres.statusCode });
 
                         callback && callback(null, sbody, sres.statusCode, sres.headers);
                         callback = 0;
                     }
                 });
             } else {
-                logger.forward(logLine, { statusCode: sres.statusCode });
+                that.logger.forward(logLine, { statusCode: sres.statusCode });
                 callback && callback(null, null, sres.statusCode, sres.headers);
                 callback = 0;
             }
         });
 
         sreq.on('error', function (err) {
-            logger.error('Failed to forward request to ' + detourUrl + ' due to "' + err + '".');
+            that.logger.error('Failed to forward request to ' + detourUrl + ' due to "' + err + '".');
 
             callback && callback(err);
             callback = 0;
@@ -325,7 +327,7 @@
 
         // Some requests are fake
         req.on && req.on('error', function (err) {
-            logger.error('Failed to receive request due to "' + err + '".');
+            that.logger.error('Failed to receive request due to "' + err + '".');
 
             callback && callback(err);
             callback = 0;
@@ -360,10 +362,11 @@
         });
     }
 
-    function processServerSideInclude(req, body, callback) {
+    DetourProxy.prototype.processServerSideInclude = function (req, body, callback) {
         // <!--#include virtual="../../../../eng/include/topnav.htm" -->
 
-        var pattern = /<!--#include .*?virtual="([^"]*)".*?-->/g,
+        var that = this,
+            pattern = /<!--#include .*?virtual="([^"]*)".*?-->/g,
             match,
             lastIndex = 0,
             newBody = [];
@@ -386,7 +389,7 @@
                 newBody.push(body.substring(lastIndex, match.index));
                 newBody.push('<!-- BEGIN SSI ' + ssiUrl + ' -->\n');
 
-                handleRequestByAllRules({ headers: sreqHeaders, url: ssiUrl }, function (err, body, statusCode, contentType) {
+                that.handleRequestByAllRules({ headers: sreqHeaders, url: ssiUrl }, function (err, body, statusCode, contentType) {
                     if (err) {
                         newBody.push('<!-- SSI FAILED ' + err + ' -->');
                     } else if (statusCode !== 200) {
