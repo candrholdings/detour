@@ -46,7 +46,7 @@
     function DetourProxy(config, port) {
         var that = this,
             app = express(),
-            livereload = config.livereload !== false && require('./util/livereload')().listen(),
+            liveReload = config.liveReload !== false && require('./util/livereload')().listen(),
             logger = that.logger = new (winston.Logger)({
                 levels: {
                     error: 9,
@@ -92,11 +92,11 @@
 
                 rule.to = path.resolve(path.dirname(configPath), rule.to) + (toDir ? path.sep : '');
 
-                if (livereload) {
+                if (liveReload) {
                     var watcher = require('./util/watch')(),
                         loopWatch = function () {
                             watcher.watch(rule.to, function (err, changes) {
-                                !err && livereload.reload(changes.map(function (change) {
+                                !err && liveReload.reload(changes.map(function (change) {
                                     return url.resolve(rule.from, path.relative(rule.to, change));
                                 }));
 
