@@ -293,7 +293,7 @@
 
                     sresHeaders[name] = value.split(', ');
                     // sresHeaders[name] = 'NTLM';
-                } else if (name.substr(0, 6) === 'proxy-') {
+                } else if (name.substr(0, 6) === 'proxy-' || name === 'transfer-encoding' || name === 'connection') {
                     delete sresHeaders[name];
                 }
             });
