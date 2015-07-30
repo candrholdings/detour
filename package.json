@@ -1,6 +1,6 @@
 {
   "name": "detour-proxy",
-  "version": "0.0.18",
+  "version": "0.0.19",
   "description": "Reverse proxy for frontend developers",
   "bugs": {
     "url": "https://github.com/candrholdings/detour/issues"
@@ -16,7 +16,7 @@
     "url": "https://github.com/candrholdings/detour.git"
   },
   "dependencies": {
-    "async": "^1.2.1",
+    "async": "^1.4.0",
     "async-linq": "^1.0.4",
     "express": "^4.12.4",
     "livereload-js": "^2.2.2",
