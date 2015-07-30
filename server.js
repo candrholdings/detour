@@ -12,7 +12,8 @@
         resolveUrl = url.resolve,
         evaluate = require('./rule-evaluator'),
         configPath = process.argv[2] || 'detour-config.json',
-        systemProxy = process.env.http_proxy;
+        systemProxy = process.env.http_proxy,
+        NUM_SSI_WORKER = 10;
 
     systemProxy = systemProxy && parseUrl(systemProxy);
 
@@ -22,7 +23,8 @@
         // info: 'bold green',
         skip: 'bold yellow',
         forward: 'bold cyan',
-        follow: 'bold green'
+        follow: 'bold green',
+        ssi: 'bold blue'
     });
 
     require.main === module && readJsonFile(configPath, function (err, config) {
@@ -54,7 +56,8 @@
                     info: 5,
                     skip: 4,
                     forward: 3,
-                    follow: 3
+                    follow: 3,
+                    ssi: 3
                 },
                 transports: [new (winston.transports.Console)({ colorize: true })]
             }),
@@ -151,7 +154,7 @@
         var that = this,
             resultErr, resultBody, resultStatusCode, resultHeaders;
 
-        async.some(that.config.mappings, function (rule, next) {
+        async.someLimit(that.config.mappings, 1, function (rule, next) {
             that.handleRequestByRule(req, rule, function (err, body, statusCode, headers) {
                 if (err) {
                     resultErr = err;
@@ -368,48 +371,69 @@
         var that = this,
             pattern = /<!--#include .*?virtual="([^"]*)".*?-->/g,
             match,
-            lastIndex = 0,
-            newBody = [];
+            reqHeaders = req.headers;
 
         if ((req.ssi = ++req.ssi || 1) > 10) {
             return callback(new Error('too much server-side include directives'));
         }
 
-        async.whilst(
-            function () { return (match = pattern.exec(body)); },
-            function (callback) {
+        var fragments = {};
+
+        while ((match = pattern.exec(body))) {
+            fragments[resolveUrl(req.originalUrl, match[1])] = null;
+        }
+
+        var numFragments = Object.getOwnPropertyNames(fragments).length;
+
+        if (!numFragments) {
+            return callback(null, body);
+        }
+
+        that.logger.ssi(req.originalUrl + ' x ' + numFragments);
+
+        async.eachLimit(Object.getOwnPropertyNames(fragments), NUM_SSI_WORKER, function (url, callback) {
+            that.logger.ssi((req.originalUrl || req.url) + ' + ' + url);
+
+            that.handleRequestByAllRules({
+                headers: {
+                    'accept-language': reqHeaders['accept-language'],
+                    cookie: reqHeaders.cookie,
+                    'user-agent': reqHeaders['user-agent']
+                },
+                url: url
+            }, function (err, body, statusCode, headers) {
+                fragments[url] = err ? { err: err } : { statusCode: statusCode, body: body, contentType: headers.contentType };
+
+                callback();
+            });
+        }, function (err) {
+            if (err) { return callback(err); }
+
+            var lastIndex = 0,
+                newBody = [];
+
+            while ((match = pattern.exec(body))) {
                 var ssiUrl = resolveUrl(req.originalUrl, match[1]),
-                    reqHeaders = req.headers,
-                    sreqHeaders = {
-                        'accept-language': reqHeaders['accept-language'],
-                        cookie: reqHeaders['cookie'],
-                        'user-agent': reqHeaders['user-agent']
-                    };
+                    fragment = fragments[ssiUrl];
 
                 newBody.push(body.substring(lastIndex, match.index));
                 newBody.push('<!-- BEGIN SSI ' + ssiUrl + ' -->\n');
 
-                that.handleRequestByAllRules({ headers: sreqHeaders, url: ssiUrl }, function (err, body, statusCode, contentType) {
-                    if (err) {
-                        newBody.push('<!-- SSI FAILED ' + err + ' -->');
-                    } else if (statusCode !== 200) {
-                        newBody.push('<!-- SERVER RETURN ' + statusCode + ' -->');
-                    }
+                if (fragment.err) {
+                    newBody.push('<!-- SSI FAILED ' + fragment.err + ' -->');
+                } else {
+                    newBody.push('<!-- HTTP Status ' + fragment.statusCode + ', Content-Type = "' + fragment.contentType + '"-->');
+                }
 
-                    !err && body && newBody.push(body);
-
-                    newBody.push('\n<!-- END SSI ' + ssiUrl + ' -->');
-                    lastIndex = match.index + match[0].length;
-
-                    callback();
-                });
-            },
-            function (err) {
-                !err && newBody.push(body.substr(lastIndex));
-
-                callback && callback(err, err ? null : newBody.join(''));
+                newBody.push(fragment.body);
+                newBody.push('\n<!-- END SSI ' + ssiUrl + ' -->');
+                lastIndex = match.index + match[0].length;
             }
-        );
+
+            newBody.push(body.substr(lastIndex));
+
+            callback(null, newBody.join(''));
+        });
     }
 
     function describe(err) {
