@@ -71,6 +71,8 @@
 
         that.config = config;
 
+        config.authorization && app.use(require('./authorization')(config.authorization));
+
         config.mappings.forEach(function (rule) {
             app.use(function (req, res, next) {
                 that.handleRequestByRule(req, rule, function (err, body, statusCode, headers) {
