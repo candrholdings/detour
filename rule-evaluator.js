@@ -14,10 +14,12 @@
             fromDir = /[\\\/]$/.test(from);
 
         if (toDir) {
-            if (fromDir) {
-                return to + urlPathname.substr(from.length) + (url.search || '');
-            } else {
-                return to + urlPathname.split('/').pop() + (url.search || '');
+            if (urlPathname.substr(0, from.length) === from) {
+                if (fromDir) {
+                    return to + urlPathname.substr(from.length) + (url.search || '');
+                } else {
+                    return to + urlPathname.split('/').pop() + (url.search || '');
+                }
             }
         } else if (urlPathname === from) {
             return to + (url.search || '');

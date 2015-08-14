@@ -110,6 +110,20 @@
             'should return publish/index.html?abc=123&def=456&xyz=789': function (topic) {
                 assert.equal(topic, 'publish/index.html?abc=123&def=456&xyz=789');
             }
+        },
+
+        'when evaluating http://www.example.com/abc/index.html against /def/ -> xyz/': {
+            topic: evaluate({ url: 'http://www.example.com/abc/index.html' }, { from: '/def/', to: 'xyz/' }),
+            'should return not found': function (topic) {
+                assert(!topic);
+            }
+        },
+
+        'when evaluating http://www.example.com/abc/index.html against /def/ -> xyz/123.html': {
+            topic: evaluate({ url: 'http://www.example.com/abc/index.html' }, { from: '/def/', to: 'xyz/123.html' }),
+            'should return not found': function (topic) {
+                assert(!topic);
+            }
         }
     }).export(module);
 }();
