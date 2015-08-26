@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-!function (async, express, fs, http, htps, mime, path, url, winston) {
+!function (async, crypto, digest, express, fs, http, htps, mime, path, url, winston) {
     'use strict';
 
     var cookieParser = require('./cookieparser'),
@@ -24,7 +24,8 @@
         skip: 'bold yellow',
         forward: 'bold cyan',
         follow: 'bold green',
-        ssi: 'bold blue'
+        ssi: 'bold blue',
+        auth: 'bold green'
     });
 
     require.main === module && readJsonFile(configPath, function (err, config) {
@@ -57,7 +58,8 @@
                     skip: 4,
                     forward: 3,
                     follow: 3,
-                    ssi: 3
+                    ssi: 3,
+                    auth: 3
                 },
                 transports: [new (winston.transports.Console)({ colorize: true })]
             }),
@@ -236,12 +238,14 @@
             requestOptions = parseUrl(detourUrl),
             headers = requestOptions.headers = req.headers,
             sreq,
-            proxy = options.proxy || systemProxy;
+            proxy = options.proxy || systemProxy,
+            optionsAuth = options.auth;
 
         req.headers.host = requestOptions.host;
         delete req.headers['accept-encoding'];
         requestOptions.method = req.method;
         requestOptions.auth = req.auth;
+        // requestOptions.auth = req.auth || (optionsAuth ? optionsAuth.username + ':' + optionsAuth.password : null);
         requestOptions.agent = false;
 
         if (proxy) {
@@ -287,6 +291,41 @@
                     (req.headers || (req.headers = {})).cookie = serializeCookie(cookies);
 
                     return that.requestToHttp(req, detourUrl, options, redirectTtl - 1, callback);
+                }
+            } else if (sres.statusCode === 401 && optionsAuth) {
+                if (redirectTtl === 0) {
+                    that.logger.skip(req.originalUrl + ' has failed authentication');
+
+                    callback && callback();
+                    callback = 0;
+
+                    return;
+                }
+
+                var wwwAuthenticates = parseHeaders(sres)['www-authenticate'],
+                    basicAuthenticate = wwwAuthenticates && wwwAuthenticates.reduce(function (result, wwwAuthenticate) {
+                        return result || !/^basic\s/i.test(wwwAuthenticate) ? result : wwwAuthenticate;
+                    }, null),
+                    digestAuthenticate = wwwAuthenticates && wwwAuthenticates.reduce(function (result, wwwAuthenticate) {
+                        return result || !/^digest\s/i.test(wwwAuthenticate) ? result : wwwAuthenticate;
+                    }, null);
+
+                if (basicAuthenticate) {
+                    that.logger.auth('Basic ' + req.originalUrl);
+
+                    (req.headers || (req.headers = {})).Authorization = 'Basic ' + new Buffer(optionsAuth.username + ':' + optionsAuth.password).toString('base64');
+
+                    // If auth failed again, then we should not retry (redirectTtl = 0) and fail immediately
+
+                    return that.requestToHttp(req, detourUrl, options, 0, callback);
+                } else if (digestAuthenticate) {
+                    that.logger.auth('Digest ' + req.originalUrl);
+
+                    (req.headers || (req.headers = {})).Authorization = digest.sign(digestAuthenticate, req.method, req.url, null, optionsAuth.username, optionsAuth.password);
+
+                    // If auth failed again, then we should not retry (redirectTtl = 0) and fail immediately
+
+                    return that.requestToHttp(req, detourUrl, options, 0, callback);
                 }
             }
 
@@ -479,8 +518,26 @@
     function isArray(obj) {
         return Object.prototype.toString.call(obj) === '[object Array]';
     }
+
+    function parseHeaders(res) {
+        var headers = res.rawHeaders.slice(),
+            result = {},
+            name,
+            value;
+
+        while (headers.length) {
+            name = headers.shift().toLowerCase();
+            value = headers.shift();
+
+            (result[name] || (result[name] = [])).push(value);
+        }
+
+        return result;
+    }
 }(
     require('async'),
+    require('crypto'),
+    require('./digest'),
     require('express'),
     require('fs'),
     require('http'),
