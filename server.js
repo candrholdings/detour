@@ -249,6 +249,10 @@
         requestOptions.agent = false;
 
         if (proxy) {
+            if (typeof proxy === 'string') {
+                proxy = parseUrl(proxy);
+            }
+
             requestOptions.hostname = proxy.hostname;
             requestOptions.port = proxy.port;
             requestOptions.protocol = proxy.protocol || 'http:';
@@ -314,6 +318,7 @@
                     that.logger.auth('Basic ' + req.originalUrl);
 
                     (req.headers || (req.headers = {})).Authorization = 'Basic ' + new Buffer(optionsAuth.username + ':' + optionsAuth.password).toString('base64');
+                    req.body = body;
 
                     // If auth failed again, then we should not retry (redirectTtl = 0) and fail immediately
 
@@ -322,6 +327,7 @@
                     that.logger.auth('Digest ' + req.originalUrl);
 
                     (req.headers || (req.headers = {})).Authorization = digest.sign(digestAuthenticate, req.method, req.url, null, optionsAuth.username, optionsAuth.password);
+                    req.body = body;
 
                     // If auth failed again, then we should not retry (redirectTtl = 0) and fail immediately
 
@@ -377,10 +383,26 @@
             callback = 0;
         });
 
-        if (contentLength) {
-            req.pipe(sreq);
+        var body = [],
+            numBodyBytes = 0;
+
+        if (req.body) {
+            body = req.body;
+
+            sreq.write(body);
         } else {
-            sreq.end();
+            req.on('data', function (data) {
+                body.push(data);
+                numBodyBytes += data.length;
+            }).on('end', function () {
+                body = Buffer.concat(body, numBodyBytes);
+            });
+
+            if (contentLength) {
+                req.pipe(sreq);
+            } else {
+                sreq.end();
+            }
         }
     }
 
