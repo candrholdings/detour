@@ -5,6 +5,13 @@
         "to": "html/",
         "skipOn404": true
     }, {
+        "from": "/apis/",
+        "to": "http://apis.example.com/",
+        "skipOn404": true,
+        "httpsOptions": {
+            "rejectUnauthorized": false
+        }
+    }, {
         "from": "/api/",
         "to": "http://api.example.com/"
     }]

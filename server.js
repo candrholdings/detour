@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-!function (async, crypto, digest, express, fs, http, htps, mime, path, url, winston) {
+!function (async, crypto, digest, express, fs, http, https, mime, path, url, winston) {
     'use strict';
 
     var cookieParser = require('./cookieparser'),
@@ -258,6 +258,20 @@
             requestOptions.protocol = proxy.protocol || 'http:';
         }
 
+        if (requestOptions.protocol === 'https:') {
+            var httpsOptions = options.httpsOptions;
+
+            if (httpsOptions) {
+                ['pfx', 'key', 'passphrase', 'cert', 'ca', 'ciphers', 'rejectUnauthorized', 'secureProtocol'].forEach(function (name) {
+                    var optionValue = httpsOptions[name];
+
+                    if (typeof optionValue !== 'undefined') {
+                        requestOptions[name] = httpsOptions[name];
+                    }
+                });
+            }
+        }
+
         // Microsoft Edge will send "cookie" header with undefined content
         // It would fail with Error: "name" and "value" are required for setHeader().
         Object.getOwnPropertyNames(headers).forEach(function (name) {
@@ -266,7 +280,7 @@
             }
         });
 
-        sreq = http.request(requestOptions, function (sres) {
+        sreq = (requestOptions.protocol === 'https:' ? https : http).request(requestOptions, function (sres) {
             var statusCode = sres.statusCode,
                 logLine = req.originalUrl + ' -> ' + formatUrl(requestOptions);
 
@@ -390,6 +404,7 @@
             body = req.body;
 
             sreq.write(body);
+            sreq.end();
         } else {
             req.on('data', function (data) {
                 body.push(data);
