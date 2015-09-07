@@ -80,7 +80,7 @@
                 that.handleRequestByRule(req, rule, function (err, body, statusCode, headers) {
                     if (err) {
                         res.status(500).send();
-                    } else if (body) {
+                    } else if (statusCode) {
                         Object.getOwnPropertyNames(headers).forEach(function (name) {
                             res.set(name, headers[name]);
                         });
