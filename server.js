@@ -406,7 +406,7 @@
             sreq.write(body);
             sreq.end();
         } else {
-            req.on('data', function (data) {
+            req.on && req.on('data', function (data) {
                 body.push(data);
                 numBodyBytes += data.length;
             }).on('end', function () {
