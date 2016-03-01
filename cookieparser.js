@@ -1,41 +1,43 @@
 !function () {
-    'use strict';
+  'use strict';
 
-    module.exports.parseSetCookie = function (setCookies, existing) {
-        var setCookiePattern = /^\s*([^=]+)=([^\s;]+)/;
+  module.exports.parseSetCookie = function (setCookies, existing) {
+    var setCookiePattern = /^\s*([^=]+)=([^\s;]+)/;
 
-        existing = existing || {};
+    existing = existing || {};
 
-        (typeof setCookies === 'string' ? [setCookies] : setCookies).forEach(function (setCookie) {
-            var match = setCookiePattern.exec(setCookie);
+    (typeof setCookies === 'string' ? [setCookies] : setCookies).forEach(function (setCookie) {
+      var match = setCookiePattern.exec(setCookie);
 
-            if (match) {
-                existing[match[1]] = match[2];
-            }
-        });
+      if (match) {
+        existing[match[1]] = match[2];
+      }
+    });
 
-        return existing;
-    };
+    return existing;
+  };
 
-    module.exports.parseCookie = function (cookies) {
-        var cookiePattern = /\s*([^=]+)=([^\s;]+)(;|$)\s*/g,
-            result = {},
-            match;
+  module.exports.parseCookie = function (cookies) {
+    var cookiePattern = /\s*([^=]+)=([^\s;]+)(;|$)\s*/g,
+      result = {},
+      match;
 
-        while ((match = cookiePattern.exec(cookies))) {
-            result[match[1]] = match[2];
-        }
+    while ((match = cookiePattern.exec(cookies))) {
+      result[match[1]] = match[2];
+    }
 
-        return result;
-    };
+    return result;
+  };
 
-    module.exports.serializeCookie = function (map) {
-        var result = [];
+  module.exports.serializeCookie = function (map) {
+    var result = [];
 
-        Object.getOwnPropertyNames(map).forEach(function (name) {
-            result.push(name + '=' + map[name]);
-        });
+    Object.getOwnPropertyNames(map).forEach(function (name) {
+      const value = map[name];
 
-        return result.join('; ');
-    };
+      value && result.push(name + '=' + value);
+    });
+
+    return result.join('; ');
+  };
 }();
