@@ -18,6 +18,7 @@
   "dependencies": {
     "async": "^1.4.0",
     "async-linq": "^1.0.4",
+    "chokidar": "^1.4.3",
     "express": "^4.12.4",
     "livereload-js": "^2.2.2",
     "livereload-server": "^0.2.3",
