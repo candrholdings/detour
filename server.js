@@ -40,7 +40,8 @@ winston.addColors({
   forward: 'bold cyan',
   follow: 'bold green',
   ssi: 'bold blue',
-  auth: 'bold green'
+  auth: 'bold green',
+  reload: 'bold red'
 });
 
 require.main === module && readJsonFile(configPath, function (err, config) {
@@ -73,7 +74,8 @@ function DetourProxy(config, port) {
         forward: 3,
         follow: 3,
         ssi: 3,
-        auth: 3
+        auth: 3,
+        reload: 3
       },
       transports: [new winston.transports.Console({ colorize: true })]
     }),
@@ -134,7 +136,10 @@ DetourProxy.prototype.loopWatch = function (rule) {
   const
     watcher = chokidar.watch(rule.to),
     onChange = change => {
-      this.liveReload.reload(url.resolve(rule.from, path.relative(rule.to, change)));
+      const newURL = url.resolve(rule.from, path.relative(rule.to, change));
+
+      this.logger.reload(newURL);
+      this.liveReload.reload(newURL);
     };
 
   watcher
