@@ -72,6 +72,7 @@ Detour follow server side includes (or SSI). The SSI path will also be evaluated
 Detour built-in [LiveReload server](http://livereload.com/). When detour is up, it will watch all mappings that point to local file system. Changes detected will be broadcasted to LiveReload plugin immediately. Instead of using unreliable [`fs.watch`](https://nodejs.org/api/fs.html#fs_fs_watch_filename_options_listener), we use a more reliable approach by crawling every file stats every 2 seconds. We still use [`fs.watch`](https://nodejs.org/api/fs.html#fs_fs_watch_filename_options_listener) for auxiliary purpose.
 
 ### Changelog
+* 0.0.25 (2016-04-20): Log LiveReload events
 * 0.0.24 (2016-03-30): Use [chokidar](https://npmjs.com/package/chokidar) for file watcher
 
 ### Issues
