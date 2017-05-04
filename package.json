@@ -1,12 +1,12 @@
 {
   "name": "detour-proxy",
-  "version": "0.0.25",
+  "version": "0.0.26",
   "description": "Reverse proxy for frontend developers",
   "bugs": {
     "url": "https://github.com/candrholdings/detour/issues"
   },
   "license": "MIT",
-  "author": "William Wong <compulim@hotmail.com>",
+  "author": "Software Developers <dev@candrholdings.com>",
   "bin": {
     "detour": "./server.js"
   },

@@ -62,6 +62,10 @@ module.exports = function (config, port) {
   new DetourProxy(config, port || 1337);
 };
 
+process.on('uncaughtException', function (err) {
+  console.error(err.stack);
+});
+
 function DetourProxy(config, port) {
   var that = this,
     app = express(),
